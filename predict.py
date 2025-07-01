@@ -83,7 +83,7 @@ def predict_and_display(image_path, model, class_names):
         ax.set_title(title)
         ax.axis('off')
 
-    image_resized = cv2.resize(image, (128, 128))
+    image_resized = cv2.resize(image, (96, 96))
     image_resized = image_resized.astype('float32') / 255.0
     image_resized = np.expand_dims(image_resized, axis=0)
 
@@ -108,7 +108,7 @@ with zipfile.ZipFile(zip_path, 'r') as zip_ref:
 model = load_model('extracted_model/model.h5')
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-data_dir = "images"
+data_dir = "Apple"
 class_names = sorted(set(d.split('_', 1)[1] for d in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, d))))
 
 predict_and_display(image_path, model, class_names)
