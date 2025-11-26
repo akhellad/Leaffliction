@@ -94,67 +94,87 @@ def find_coeffs(pa, pb):
 
 def augment_image(image_path, output_dir, num_augmentations_needed=1):
     """
-    Applique des augmentations à une image.
-    num_augmentations_needed: nombre d'augmentations à générer
+    Apply augmentations to an image.
+    num_augmentations_needed: number of augmentations to generate
     """
     print(f"Augmenting image: {image_path}")
     image = Image.open(image_path)
     base_name = os.path.splitext(os.path.basename(image_path))[0]
 
+    # 6 types of augmentation as required by the subject
     augmentations = [
         ('Flip', flip_image),
         ('Rotate', rotate_image),
         ('Skew', skew_image),
+        ('Shear', shear_image),
         ('Crop', crop_image),
-        # Retiré Shear et Distort pour réduire la complexité et améliorer la vitesse
+        ('Distortion', distort_image),
     ]
 
-    # Sélectionne aléatoirement les augmentations à appliquer
-    selected_augmentations = random.sample(augmentations, min(num_augmentations_needed, len(augmentations)))
-    
+    # Select random augmentations to apply
+    selected_augmentations = random.sample(
+        augmentations,
+        min(num_augmentations_needed, len(augmentations))
+    )
+
     augmented_count = 0
     for aug_name, aug_func in selected_augmentations:
         if augmented_count >= num_augmentations_needed:
             break
         try:
             augmented_image = aug_func(image)
-            augmented_image_path = os.path.join(output_dir,
-                                                f"{base_name}_{aug_name}_{random.randint(1000,9999)}.JPG")
+            augmented_image_path = os.path.join(
+                output_dir,
+                f"{base_name}_{aug_name}_{random.randint(1000, 9999)}.JPG"
+            )
             augmented_image.save(augmented_image_path)
             augmented_count += 1
             print(f"  Created: {os.path.basename(augmented_image_path)}")
         except Exception as e:
             print(f"  Error with {aug_name}: {e}")
-    
+
     return augmented_count
 
 
 def display_augmented_images(image_path, output_dir):
+    """
+    Display the original image and 6 augmented versions.
+    """
     print(f"Displaying augmented images for: {image_path}")
     base_name = os.path.splitext(os.path.basename(image_path))[0]
+
+    # 6 augmentation types + original (7 total as shown in subject)
     augmentations = [
-        'Original', 'Flip', 'Rotate', 'Skew', 'Crop'
+        'Original', 'Flip', 'Rotate', 'Skew', 'Shear', 'Crop', 'Distortion'
     ]
-    fig, axs = plt.subplots(1, len(augmentations), figsize=(15, 3))
+
+    fig, axs = plt.subplots(1, len(augmentations), figsize=(21, 3))
+
     for ax, aug_name in zip(axs, augmentations):
         if aug_name == 'Original':
             augmented_image_path = image_path
         else:
-            # Cherche la première image avec ce nom d'augmentation
-            matching_files = [f for f in os.listdir(output_dir) if f.startswith(f"{base_name}_{aug_name}")]
+            # Find first image with this augmentation name
+            matching_files = [
+                f for f in os.listdir(output_dir)
+                if f.startswith(f"{base_name}_{aug_name}")
+            ]
             if matching_files:
-                augmented_image_path = os.path.join(output_dir, matching_files[0])
+                augmented_image_path = os.path.join(output_dir,
+                                                     matching_files[0])
             else:
                 augmented_image_path = None
-                
+
         if augmented_image_path and os.path.exists(augmented_image_path):
             augmented_image = Image.open(augmented_image_path)
             ax.imshow(augmented_image)
-            ax.set_title(aug_name)
+            ax.set_title(aug_name, fontsize=10, fontweight='bold')
             ax.axis('off')
         else:
-            ax.set_title(f"{aug_name} (missing)")
+            ax.set_title(f"{aug_name} (missing)", fontsize=9)
             ax.axis('off')
+
+    plt.tight_layout()
     plt.show()
 
 
@@ -207,12 +227,15 @@ def balance_dataset(directory):
                 needed = target_images - count
                 print(f"  Besoin de {needed} images supplémentaires")
                 
-                # Récupère toutes les images existantes
+                # Get all existing original images (not augmented ones)
                 original_images = [
-                    os.path.join(path, file) 
+                    os.path.join(path, file)
                     for file in os.listdir(path)
-                    if file.lower().endswith(('.png', '.jpg', '.jpeg')) 
-                    and not any(aug in file for aug in ['_Flip', '_Rotate', '_Skew', '_Crop', '_Shear', '_Distort'])
+                    if file.lower().endswith(('.png', '.jpg', '.jpeg'))
+                    and not any(aug in file for aug in ['_Flip', '_Rotate',
+                                                         '_Skew', '_Crop',
+                                                         '_Shear',
+                                                         '_Distortion'])
                 ]
                 
                 if not original_images:
@@ -258,11 +281,14 @@ def balance_dataset(directory):
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python Augmentation.py <path>")
+        print("  - For a single image: displays 6 augmentation types")
+        print("  - For a directory: balances the dataset")
         sys.exit(1)
     path = sys.argv[1]
     if os.path.isfile(path):
         output_dir = os.path.dirname(path)
-        augment_image(path, output_dir, 4)  # Crée 4 augmentations
+        # Create 6 augmentations as required by the subject
+        augment_image(path, output_dir, 6)
         display_augmented_images(path, output_dir)
     elif os.path.isdir(path):
         balance_dataset(path)

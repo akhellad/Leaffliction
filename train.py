@@ -71,16 +71,23 @@ def split_dataset(image_paths, labels, split_ratio=0.8):
     return train_paths, train_labels, val_paths, val_labels
 
 class OptimizedDataGenerator(Sequence):
-    """Générateur de données optimisé pour la vitesse"""
-    def __init__(self, image_paths, labels, batch_size=32, image_size=(96, 96), n_classes=10, shuffle=True):
+    """Optimized data generator for speed and accuracy"""
+    def __init__(self, image_paths, labels, batch_size=32,
+                 image_size=(128, 128), n_classes=10, shuffle=True,
+                 label_encoder=None):
         self.image_paths = image_paths
         self.labels = labels
         self.batch_size = batch_size
-        self.image_size = image_size  # Réduit de 128 à 96 pour plus de vitesse
+        # Increased to 128x128 for better accuracy
+        self.image_size = image_size
         self.n_classes = n_classes
         self.shuffle = shuffle
-        self.labels_encoder = LabelEncoder()
-        self.labels_encoder.fit(labels)
+        # Use provided label encoder (shared between train/val) or create new
+        if label_encoder is not None:
+            self.labels_encoder = label_encoder
+        else:
+            self.labels_encoder = LabelEncoder()
+            self.labels_encoder.fit(labels)
         super().__init__()
         self.on_epoch_end()
         
@@ -100,29 +107,32 @@ class OptimizedDataGenerator(Sequence):
             np.random.shuffle(self.indexes)
     
     def __data_generation(self, image_paths_temp, labels_temp):
-        X = np.empty((self.batch_size, *self.image_size, 3), dtype=np.float32)
+        X = np.empty((self.batch_size, *self.image_size, 3),
+                     dtype=np.float32)
         y = np.empty((self.batch_size), dtype=int)
-        
-        for i, (image_path, label) in enumerate(zip(image_paths_temp, labels_temp)):
+
+        for i, (image_path, label) in enumerate(zip(image_paths_temp,
+                                                     labels_temp)):
             try:
-                # Lecture et redimensionnement optimisés
+                # Optimized reading and resizing
                 image = cv2.imread(image_path)
                 if image is None:
                     print(f"Warning: Unable to read image {image_path}")
-                    # Utilise une image noire par défaut
+                    # Use black image as default
                     image = np.zeros((*self.image_size, 3), dtype=np.uint8)
                 else:
-                    image = cv2.resize(image, self.image_size, interpolation=cv2.INTER_AREA)
-                
-                # Normalisation plus rapide
+                    image = cv2.resize(image, self.image_size,
+                                       interpolation=cv2.INTER_AREA)
+
+                # Faster normalization
                 X[i,] = image.astype(np.float32) / 255.0
                 y[i] = self.labels_encoder.transform([label])[0]
             except Exception as e:
                 print(f"Error processing {image_path}: {e}")
-                # Image par défaut en cas d'erreur
+                # Default image in case of error
                 X[i,] = np.zeros((*self.image_size, 3), dtype=np.float32)
                 y[i] = 0
-        
+
         return X, to_categorical(y, num_classes=self.n_classes)
 
 def preprocess_labels(labels):
@@ -131,92 +141,119 @@ def preprocess_labels(labels):
     return labels, le
 
 def build_optimized_model(input_shape, num_classes):
-    """Modèle CNN optimisé pour la vitesse et la performance"""
+    """
+    Optimized CNN model for high accuracy (>90%).
+    Enhanced architecture with more filters and deeper layers.
+    """
     model = Sequential([
         Input(shape=input_shape),
-        
-        # Premier bloc - extraction de features basiques
+
+        # First block - basic feature extraction
+        Conv2D(32, (3, 3), activation='relu', padding='same'),
+        BatchNormalization(),
         Conv2D(32, (3, 3), activation='relu', padding='same'),
         BatchNormalization(),
         MaxPooling2D((2, 2)),
-        Dropout(0.15),
-        
-        # Deuxième bloc - features plus complexes
+        Dropout(0.25),
+
+        # Second block - more complex features
+        Conv2D(64, (3, 3), activation='relu', padding='same'),
+        BatchNormalization(),
         Conv2D(64, (3, 3), activation='relu', padding='same'),
         BatchNormalization(),
         MaxPooling2D((2, 2)),
-        Dropout(0.15),
-        
-        # Troisième bloc - features avancées
+        Dropout(0.25),
+
+        # Third block - advanced features
+        Conv2D(128, (3, 3), activation='relu', padding='same'),
+        BatchNormalization(),
         Conv2D(128, (3, 3), activation='relu', padding='same'),
         BatchNormalization(),
         MaxPooling2D((2, 2)),
-        Dropout(0.2),
-        
-        # Classification
+        Dropout(0.25),
+
+        # Fourth block - high-level features
+        Conv2D(256, (3, 3), activation='relu', padding='same'),
+        BatchNormalization(),
+        Conv2D(256, (3, 3), activation='relu', padding='same'),
+        BatchNormalization(),
+        MaxPooling2D((2, 2)),
+        Dropout(0.3),
+
+        # Classification layers
         Flatten(),
+        Dense(512, activation='relu'),
+        BatchNormalization(),
+        Dropout(0.5),
         Dense(256, activation='relu'),
         BatchNormalization(),
         Dropout(0.4),
-        Dense(128, activation='relu'),
-        Dropout(0.3),
         Dense(num_classes, activation='softmax')
     ])
-    
-    # Optimiseur avec learning rate adaptative
+
+    # Optimizer with adaptive learning rate
     optimizer = Adam(learning_rate=0.001)
-    model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
-    
+    model.compile(optimizer=optimizer,
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
+
     return model
 
-def train_model(train_generator, val_generator, epochs=15):
-    """Entraînement avec callbacks pour optimiser la vitesse et éviter l'overfitting"""
-    print("=== CONSTRUCTION DU MODÈLE ===")
-    
+def train_model(train_generator, val_generator, epochs=30):
+    """
+    Training with callbacks to optimize speed and avoid overfitting.
+    Increased epochs to 30 for better convergence.
+    """
+    print("=== MODEL CONSTRUCTION ===")
+
     input_shape = train_generator.image_size + (3,)
     num_classes = train_generator.n_classes
-    
-    print(f"Shape d'entrée: {input_shape}")
-    print(f"Nombre de classes: {num_classes}")
-    
+
+    print(f"Input shape: {input_shape}")
+    print(f"Number of classes: {num_classes}")
+
     model = build_optimized_model(input_shape, num_classes)
-    
-    # Callbacks pour optimiser l'entraînement
+
+    # Display model summary
+    model.summary()
+
+    # Callbacks to optimize training
     callbacks = [
         EarlyStopping(
             monitor='val_accuracy',
-            patience=5,
+            patience=8,  # Increased patience for better training
             restore_best_weights=True,
             verbose=1
         ),
         ReduceLROnPlateau(
             monitor='val_loss',
             factor=0.5,
-            patience=3,
+            patience=4,  # Increased patience
             min_lr=0.00001,
             verbose=1
         )
     ]
-    
-    print("\n=== DÉBUT DE L'ENTRAÎNEMENT ===")
+
+    print("\n=== TRAINING START ===")
     start_time = time.time()
-    
+
     history = model.fit(
-        train_generator, 
-        validation_data=val_generator, 
-        epochs=epochs, 
+        train_generator,
+        validation_data=val_generator,
+        epochs=epochs,
         callbacks=callbacks,
         verbose=1
     )
-    
+
     training_time = time.time() - start_time
-    print(f"\nEntraînement terminé en {training_time:.2f}s ({training_time/60:.1f} min)")
-    
-    print("\n=== ÉVALUATION FINALE ===")
+    print(f"\nTraining completed in {training_time:.2f}s "
+          f"({training_time/60:.1f} min)")
+
+    print("\n=== FINAL EVALUATION ===")
     loss, accuracy = model.evaluate(val_generator, verbose=0)
-    print(f"Précision finale: {accuracy * 100:.2f}%")
-    print(f"Perte finale: {loss:.4f}")
-    
+    print(f"Final accuracy: {accuracy * 100:.2f}%")
+    print(f"Final loss: {loss:.4f}")
+
     return model
 
 def save_model_and_images(model, data_dir, output_zip):
@@ -249,47 +286,58 @@ def save_model_and_images(model, data_dir, output_zip):
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python train.py <data_directory> [epochs]")
-        print("Exemple: python train.py images 20")
+        print("Example: python train.py Apple 30")
         sys.exit(1)
-    
+
     data_dir = sys.argv[1]
-    epochs = int(sys.argv[2]) if len(sys.argv) > 2 else 15
+    epochs = int(sys.argv[2]) if len(sys.argv) > 2 else 30
     output_zip = "output_model.zip"
     
     print("=== CHARGEMENT DES DONNÉES ===")
     image_paths, labels = load_dataset(data_dir)
-    
+
     if not image_paths:
         print("Aucune image trouvée!")
         sys.exit(1)
-    
-    labels, le = preprocess_labels(labels)
-    
+
     print("\n=== SÉPARATION TRAIN/VALIDATION ===")
     train_paths, train_labels, val_paths, val_labels = split_dataset(image_paths, labels)
     
-    print("\n=== CRÉATION DES GÉNÉRATEURS ===")
+    print("\n=== GENERATOR CREATION ===")
+    # Get number of unique classes from the labels
+    all_labels = train_labels + val_labels
+    n_classes = len(set(all_labels))
+    print(f"Number of classes: {n_classes}")
+
+    # Create a SHARED label encoder for both train and val generators
+    # This ensures consistent label mapping between train and validation
+    shared_label_encoder = LabelEncoder()
+    shared_label_encoder.fit(all_labels)
+    print(f"Label mapping: {dict(zip(shared_label_encoder.classes_, range(n_classes)))}")
+
     train_generator = OptimizedDataGenerator(
         train_paths,
         train_labels,
         batch_size=32,
-        image_size=(96, 96),  # Réduit pour plus de vitesse
-        n_classes=len(le.classes_)
+        image_size=(128, 128),  # Increased for better accuracy
+        n_classes=n_classes,
+        label_encoder=shared_label_encoder  # Pass shared encoder
     )
-    
+
     val_generator = OptimizedDataGenerator(
         val_paths,
         val_labels,
         batch_size=32,
-        image_size=(96, 96),
-        n_classes=len(le.classes_),
-        shuffle=False
+        image_size=(128, 128),  # Increased for better accuracy
+        n_classes=n_classes,
+        shuffle=False,
+        label_encoder=shared_label_encoder  # Pass same shared encoder
     )
-    
-    print(f"Entraînement: {len(train_paths)} images")
+
+    print(f"Training: {len(train_paths)} images")
     print(f"Validation: {len(val_paths)} images")
     print(f"Batch size: 32")
-    print(f"Taille images: 96x96")
+    print(f"Image size: 128x128")
     
     # Entraînement
     model = train_model(train_generator, val_generator, epochs)
@@ -297,4 +345,4 @@ if __name__ == "__main__":
     # Sauvegarde
     save_model_and_images(model, data_dir, output_zip)
     
-    print(f"\n🎉 Entraînement terminé! Modèle sauvé dans {output_zip}")
+    print(f"\n✓ Training completed! Model saved in {output_zip}")
