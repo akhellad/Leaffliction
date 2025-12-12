@@ -1,74 +1,30 @@
-# Modèles ML
-*.h5
-*.keras
-*.pkl
-*.joblib
-*.ckpt
-*.pb
-*.pth
-*.pt
+# ModÃ¨les et checkpoints
 extracted_model/
-output_model/
-output_model*.zip
-models/
-checkpoints/
-saved_models/
 
-# Données et datasets
-*.zip
-*.tar.gz
-*.rar
+
+# DonnÃ©es et datasets
 leaves.zip
 Apple/
 Grape/
-dataset/
-data/
 images/
 *.jpg
-*.jpeg
-*.png
-*.bmp
-*.tiff
+Test_split/
 
 # Sujet et documentation
 *.pdf
 en.subject.pdf
 
-# Résultats et outputs
+# RÃ©sultats et outputs
 output/
 results/
 logs/
 predictions/
-*.csv
-*.log
 
 # Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
 
 # Environnements virtuels
 venv/
-ENV/
-env/
-.venv
 
 # IDEs
 .vscode/
@@ -77,11 +33,3 @@ env/
 *.swo
 *~
 .DS_Store
-
-# Jupyter Notebook
-.ipynb_checkpoints/
-*.ipynb
-
-# TensorFlow/Keras
-*.tflite
-tensorboard_logs/

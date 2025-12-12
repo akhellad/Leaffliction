@@ -16,7 +16,8 @@ def rotate_image(image):
 
 def skew_image(image):
     width, height = image.size
-    xshift = width * random.uniform(-0.1, 0.1)  # Réduit pour être moins agressif
+    # Réduit pour être moins agressif
+    xshift = width * random.uniform(-0.1, 0.1)
     new_width = width + abs(xshift)
     image = image.transform((int(new_width), height),
                             Image.AFFINE,
@@ -160,8 +161,9 @@ def display_augmented_images(image_path, output_dir):
                 if f.startswith(f"{base_name}_{aug_name}")
             ]
             if matching_files:
-                augmented_image_path = os.path.join(output_dir,
-                                                     matching_files[0])
+                augmented_image_path = os.path.join(
+                    output_dir,
+                    matching_files[0])
             else:
                 augmented_image_path = None
 
@@ -188,87 +190,104 @@ def analyze_dataset(directory):
                 plant_type, disease = subdir.split('_', 1)
                 if plant_type not in plant_types:
                     plant_types[plant_type] = {}
-                num_images = len([f for f in os.listdir(path) 
-                                if f.lower().endswith(('.png', '.jpg', '.jpeg'))])
+                num_images = len([
+                    f for f in os.listdir(path)
+                    if f.lower().endswith(('.png', '.jpg', '.jpeg'))
+                ])
                 plant_types[plant_type][disease] = num_images
             except ValueError:
-                print(f"Ignoring directory {subdir} (doesn't follow plant_disease format)")
+                msg = f"Ignoring directory {subdir}"
+                msg += " (doesn't follow plant_disease format)"
+                print(msg)
     return plant_types
 
 
 def balance_dataset(directory):
     """
-    Équilibre le dataset en augmentant les classes minoritaires pour atteindre 
-    le même nombre d'images que la classe majoritaire
+    Équilibre le dataset en augmentant les classes minoritaires.
+    Pour atteindre le même nombre d'images que la classe majoritaire
     """
     print("=== ANALYSE INITIALE ===")
     categories = analyze_dataset(directory)
-    
+
     if not categories:
         print("Aucune catégorie trouvée!")
         return
 
     for plant_type, diseases in categories.items():
         print(f"\n=== ÉQUILIBRAGE DE {plant_type.upper()} ===")
-        
+
         # Trouve le nombre max d'images pour ce type de plante
         max_images = max(diseases.values())
         target_images = max_images
-        
+
         print(f"Nombre max d'images: {max_images}")
-        print(f"Cible pour équilibrage: {target_images} (= classe majoritaire)")
-        
+        msg = f"Cible pour équilibrage: {target_images}"
+        msg += " (= classe majoritaire)"
+        print(msg)
+
         # Équilibre chaque maladie
         for disease, count in diseases.items():
             path = os.path.join(directory, f"{plant_type}_{disease}")
-            print(f"\nTraitement de {plant_type}_{disease}: {count} images")
-            
+            msg = f"\nTraitement de {plant_type}_{disease}: {count} images"
+            print(msg)
+
             if count < target_images:
                 needed = target_images - count
                 print(f"  Besoin de {needed} images supplémentaires")
-                
+
                 # Get all existing original images (not augmented ones)
                 original_images = [
                     os.path.join(path, file)
                     for file in os.listdir(path)
                     if file.lower().endswith(('.png', '.jpg', '.jpeg'))
-                    and not any(aug in file for aug in ['_Flip', '_Rotate',
-                                                         '_Skew', '_Crop',
-                                                         '_Shear',
-                                                         '_Distortion'])
+                    and not any(aug in file for aug in [
+                        '_Flip', '_Rotate', '_Skew', '_Crop',
+                        '_Shear', '_Distortion'
+                    ])
                 ]
-                
+
                 if not original_images:
                     print(f"  Aucune image originale trouvée dans {path}")
                     continue
-                
-                print(f"  {len(original_images)} images originales disponibles")
-                
+
+                msg = f"  {len(original_images)} images originales disponibles"
+                print(msg)
+
                 # Génère les augmentations nécessaires
                 generated = 0
                 attempts = 0
                 max_attempts = needed * 2  # Évite les boucles infinies
-                
+
                 while generated < needed and attempts < max_attempts:
                     # Sélectionne une image au hasard
                     image_path = random.choice(original_images)
-                    
-                    # Détermine combien d'augmentations créer pour cette image
+
+                    # Détermine combien d'augmentations créer
                     remaining = needed - generated
-                    augmentations_to_create = min(3, remaining)  # Max 3 par image
-                    
+                    # Max 3 par image
+                    augmentations_to_create = min(3, remaining)
+
                     try:
-                        created = augment_image(image_path, path, augmentations_to_create)
+                        created = augment_image(
+                            image_path, path, augmentations_to_create
+                        )
                         generated += created
-                        print(f"  Généré {created} images depuis {os.path.basename(image_path)} (total: {generated})")
+                        base = os.path.basename(image_path)
+                        msg = f"  Généré {created} images depuis {base}"
+                        msg += f" (total: {generated})"
+                        print(msg)
                     except Exception as e:
-                        print(f"  Erreur avec {os.path.basename(image_path)}: {e}")
-                    
+                        base = os.path.basename(image_path)
+                        print(f"  Erreur avec {base}: {e}")
+
                     attempts += 1
-                
-                print(f"  ✓ Terminé: {generated} nouvelles images créées")
+
+                msg = f"  ✓ Terminé: {generated} nouvelles images créées"
+                print(msg)
             else:
-                print(f"  ✓ Déjà équilibré ({count} >= {target_images})")
+                msg = f"  ✓ Déjà équilibré ({count} >= {target_images})"
+                print(msg)
 
     print("\n=== ANALYSE FINALE ===")
     final_categories = analyze_dataset(directory)

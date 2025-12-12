@@ -15,9 +15,10 @@ def analyze_dataset(directory):
                 plant_type, disease = subdir.split('_', 1)
                 if plant_type not in plant_types:
                     plant_types[plant_type] = {}
-                num_images = len([f for f in os.listdir(path)
-                                  if f.lower().endswith(('.png', '.jpg',
-                                                          '.jpeg'))])
+                num_images = len([
+                    f for f in os.listdir(path)
+                    if f.lower().endswith(('.png', '.jpg', '.jpeg'))
+                ])
                 plant_types[plant_type][disease] = num_images
             except ValueError:
                 print(f"Warning: Ignoring directory '{subdir}' "
@@ -37,9 +38,10 @@ def plot_distribution(plant_type, disease_counts):
 
     # Bar chart
     plt.subplot(1, 2, 1)
-    bars = plt.bar(labels, proportions, color=['#3498db', '#e74c3c',
-                                                '#2ecc71', '#f39c12',
-                                                '#9b59b6', '#1abc9c'])
+    bars = plt.bar(labels, proportions, color=[
+        '#3498db', '#e74c3c', '#2ecc71',
+        '#f39c12', '#9b59b6', '#1abc9c'
+    ])
     plt.xlabel('Disease Category', fontsize=12, fontweight='bold')
     plt.ylabel('Percentage of images', fontsize=12, fontweight='bold')
     plt.title(f'Distribution of diseases for {plant_type}',

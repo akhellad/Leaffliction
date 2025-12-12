@@ -5,20 +5,20 @@ import matplotlib.pyplot as plt
 import os
 import warnings
 import argparse
+import zipfile
+import logging
+from tensorflow.keras.models import load_model
+import tensorflow as tf
 
 warnings.filterwarnings("ignore", category=UserWarning,
                         module='tensorflow')
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
-import zipfile
-from tensorflow.keras.models import load_model
-import tensorflow as tf
-import logging
-
 tf.get_logger().setLevel(logging.ERROR)
 
 sys.stdout.reconfigure(encoding='utf-8')
+
 
 def gaussian_blur(image):
     """Apply Gaussian blur."""
@@ -36,8 +36,9 @@ def roi_objects(image):
     """Draw ROI contours."""
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _, thresh = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
-    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE,
-                                    cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(
+        thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
+    )
     roi_image = image.copy()
     cv2.drawContours(roi_image, contours, -1, (0, 255, 0), 3)
     return roi_image
@@ -47,8 +48,9 @@ def analyze_object(image):
     """Analyze objects and mark centroids."""
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _, thresh = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
-    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE,
-                                    cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(
+        thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
+    )
     analyze_image = image.copy()
     for contour in contours:
         M = cv2.moments(contour)
@@ -76,7 +78,9 @@ def histogram_equalization(image):
     img_output = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
     return img_output
 
-def predict_and_display(image_path, model, class_names, image_size=(128, 128)):
+
+def predict_and_display(image_path, model, class_names,
+                        image_size=(128, 128)):
     """
     Predict disease from image and display transformations.
     Image size must match training size (128x128).
@@ -90,22 +94,26 @@ def predict_and_display(image_path, model, class_names, image_size=(128, 128)):
 
     transformations = {
         'Original': original_image,
-        'Gaussian Blur': cv2.cvtColor(gaussian_blur(image),
-                                       cv2.COLOR_BGR2RGB),
+        'Gaussian Blur': cv2.cvtColor(
+            gaussian_blur(image), cv2.COLOR_BGR2RGB
+        ),
         'Mask': cv2.cvtColor(mask_image(image), cv2.COLOR_BGR2RGB),
         'Roi Objects': cv2.cvtColor(roi_objects(image), cv2.COLOR_BGR2RGB),
-        'Analyze Object': cv2.cvtColor(analyze_object(image),
-                                       cv2.COLOR_BGR2RGB),
-        'Pseudolandmarks': cv2.cvtColor(pseudolandmarks(image),
-                                        cv2.COLOR_BGR2RGB),
-        'Histogram Equalization': cv2.cvtColor(histogram_equalization(image),
-                                               cv2.COLOR_BGR2RGB)
+        'Analyze Object': cv2.cvtColor(
+            analyze_object(image), cv2.COLOR_BGR2RGB
+        ),
+        'Pseudolandmarks': cv2.cvtColor(
+            pseudolandmarks(image), cv2.COLOR_BGR2RGB
+        ),
+        'Histogram Equalization': cv2.cvtColor(
+            histogram_equalization(image), cv2.COLOR_BGR2RGB
+        )
     }
 
     fig, axes = plt.subplots(1, 7, figsize=(21, 4), facecolor='white')
 
-    for ax, (title, transformed_image) in zip(axes,
-                                                transformations.items()):
+    for ax, (title, transformed_image) in zip(
+            axes, transformations.items()):
         ax.imshow(transformed_image)
         ax.set_title(title, fontsize=10, fontweight='bold')
         ax.axis('off')
@@ -130,15 +138,16 @@ def predict_and_display(image_path, model, class_names, image_size=(128, 128)):
     plt.tight_layout(rect=[0, 0.05, 1, 1])
     plt.show()
 
-    print(f"\n=== PREDICTION RESULT ===")
+    print("\n=== PREDICTION RESULT ===")
     print(f"Disease: {predicted_label}")
     print(f"Confidence: {confidence:.2f}%")
-    print(f"\nTop 3 predictions:")
+    print("\nTop 3 predictions:")
     top_3_idx = np.argsort(prediction[0])[-3:][::-1]
     for idx in top_3_idx:
         print(f"  {class_names[idx]}: {prediction[0][idx]*100:.2f}%")
 
     return predicted_label
+
 
 def get_class_names_from_zip(zip_path):
     """
@@ -184,9 +193,11 @@ Examples:
         """
     )
     parser.add_argument('image_path', help='Path to the image to predict')
-    parser.add_argument('-m', '--model',
-                        default='output_model.zip',
-                        help='Path to model zip file (default: output_model.zip)')
+    parser.add_argument(
+        '-m', '--model',
+        default='output_model.zip',
+        help='Path to model zip file (default: output_model.zip)'
+    )
     parser.add_argument('-d', '--data-dir',
                         help='Data directory for class names (optional)')
 
@@ -231,7 +242,7 @@ Examples:
     print(f"Classes: {', '.join(class_names)}")
 
     # Make prediction
-    print(f"\n=== ANALYZING IMAGE ===")
+    print("\n=== ANALYZING IMAGE ===")
     print(f"Image: {args.image_path}")
     predict_and_display(args.image_path, model, class_names,
                         image_size=(128, 128))

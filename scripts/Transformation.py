@@ -1,6 +1,5 @@
 import os
 import cv2
-import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 
@@ -21,8 +20,9 @@ def roi_objects(image):
     """Detect and draw contours (ROI) on the image."""
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _, thresh = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
-    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE,
-                                    cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(
+        thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
+    )
     roi_image = image.copy()
     cv2.drawContours(roi_image, contours, -1, (0, 255, 0), 3)
     return roi_image
@@ -32,8 +32,9 @@ def analyze_object(image):
     """Analyze objects and mark their centroids."""
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _, thresh = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
-    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE,
-                                    cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(
+        thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
+    )
     analyze_image = image.copy()
     for contour in contours:
         M = cv2.moments(contour)
@@ -61,6 +62,7 @@ def histogram_equalization(image):
     img_output = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
     return img_output
 
+
 def transform_image(image_path):
     """
     Display 6 image transformations + original image.
@@ -81,7 +83,7 @@ def transform_image(image_path):
         'Histogram Equalization': histogram_equalization(image)
     }
 
-    fig = plt.figure(figsize=(18, 8))
+    plt.figure(figsize=(18, 8))
     for i, (title, transformed_image) in enumerate(
             transformations.items(), 1):
         plt.subplot(2, 4, i)
@@ -94,6 +96,7 @@ def transform_image(image_path):
 
     plt.tight_layout()
     plt.show()
+
 
 def save_transformed_images(src_dir, dst_dir, transform_type=None):
     """
@@ -141,6 +144,7 @@ def save_transformed_images(src_dir, dst_dir, transform_type=None):
             cv2.imwrite(output_path, transformed_image)
 
     print(f"Saved all transformations to {dst_dir}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
