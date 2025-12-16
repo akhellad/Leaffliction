@@ -25,6 +25,7 @@ __pycache__/
 
 # Environnements virtuels
 venv/
+myenv/
 
 # IDEs
 .vscode/
