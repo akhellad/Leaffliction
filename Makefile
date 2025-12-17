@@ -20,7 +20,8 @@ AUG_PATH ?= data/images
 
 # PHONY declarations - all targets are commands, not files
 .PHONY: help  clean-augmented clean-transformed clean-test clean-charts \
-        clean-pycache clean-all distribution augmentation transformation \
+        clean-pycache clean-all distribution distribution-apple distribution-grape \
+        augmentation transformation transformation-apple transformation-grape \
         pipeline lint train predict
 
 # ==============================================================================
@@ -34,17 +35,14 @@ help:
 	@echo "$(COLOR_CYAN)$(COLOR_BOLD)Setup:$(COLOR_RESET)"
 	@echo ""
 	@echo "$(COLOR_CYAN)$(COLOR_BOLD)Cleaning:$(COLOR_RESET)"
-	@echo "  $(COLOR_GREEN)clean-augmented$(COLOR_RESET)      Remove augmented data directory (data/augmented_directory/)"
-	@echo "  $(COLOR_GREEN)clean-transformed$(COLOR_RESET)    Remove transformed data directory (data/transformed_directory/)"
-	@echo "  $(COLOR_GREEN)clean-test$(COLOR_RESET)           Remove test output directories"
-	@echo "  $(COLOR_GREEN)clean-charts$(COLOR_RESET)         Remove generated charts directory"
 	@echo "  $(COLOR_GREEN)clean-pycache$(COLOR_RESET)        Remove Python cache files (__pycache__, *.pyc)"
-	@echo "  $(COLOR_YELLOW)clean-all$(COLOR_RESET)            Remove ALL generated data (requires confirmation)"
 	@echo ""
 	@echo "$(COLOR_CYAN)$(COLOR_BOLD)Execution:$(COLOR_RESET)"
-	@echo "  $(COLOR_GREEN)distribution$(COLOR_RESET)         Run distribution analysis on data/images/"
+	@echo "  $(COLOR_GREEN)distribution-apple$(COLOR_RESET)   Run distribution analysis on Apple/ directory"
+	@echo "  $(COLOR_GREEN)distribution-grape$(COLOR_RESET)   Run distribution analysis on Grape/ directory"
 	@echo "  $(COLOR_GREEN)augmentation$(COLOR_RESET)         Balance/augment dataset in-place using $(AUG_SCRIPT) (AUG_PATH=$(AUG_PATH))"
-	@echo "  $(COLOR_GREEN)transformation$(COLOR_RESET)       Run transformation pipeline on Apple_healthy class"
+	@echo "  $(COLOR_GREEN)transformation-apple$(COLOR_RESET) Apply transformations to all Apple disease subdirectories"
+	@echo "  $(COLOR_GREEN)transformation-grape$(COLOR_RESET) Apply transformations to all Grape disease subdirectories"
 	@echo "  $(COLOR_MAGENTA)pipeline$(COLOR_RESET)             Run full pipeline (distribution → augmentation → transformation)"
 	@echo ""
 	@echo "$(COLOR_CYAN)$(COLOR_BOLD)Code Quality:$(COLOR_RESET)"
@@ -59,27 +57,6 @@ help:
 # ==============================================================================
 # CLEANING TARGETS
 # ==============================================================================
-clean-augmented:
-	@echo "$(COLOR_YELLOW)Removing augmented data directory...$(COLOR_RESET)"
-	rm -rf data/augmented_directory/*
-	@echo "$(COLOR_GREEN)✓ Augmented data removed$(COLOR_RESET)"
-
-clean-transformed:
-	@echo "$(COLOR_YELLOW)Removing transformed data directory...$(COLOR_RESET)"
-	rm -rf data/transformed_directory/
-	@echo "$(COLOR_GREEN)✓ Transformed data removed$(COLOR_RESET)"
-
-clean-test:
-	@echo "$(COLOR_YELLOW)Removing test output directories...$(COLOR_RESET)"
-	rm -rf data/test_output/
-	rm -rf data/test_output_full/
-	rm -rf data/test_small/
-	@echo "$(COLOR_GREEN)✓ Test directories removed$(COLOR_RESET)"
-
-clean-charts:
-	@echo "$(COLOR_YELLOW)Removing generated charts...$(COLOR_RESET)"
-	rm -rf charts/
-	@echo "$(COLOR_GREEN)✓ Charts directory removed$(COLOR_RESET)"
 
 clean-pycache:
 	@echo "$(COLOR_YELLOW)Removing Python cache files...$(COLOR_RESET)"
@@ -88,58 +65,41 @@ clean-pycache:
 	find . -type f -name "*.pyo" -delete 2>/dev/null || true
 	@echo "$(COLOR_GREEN)✓ Python cache files removed$(COLOR_RESET)"
 
-clean-all:
-	@echo "$(COLOR_YELLOW)$(COLOR_BOLD)WARNING: This will delete ALL generated data!$(COLOR_RESET)"
-	@echo "This includes:"
-	@echo "  - data/augmented_directory/"
-	@echo "  - data/transformed_directory/"
-	@echo "  - data/test_output*, data/test_small/"
-	@echo "  - charts/"
-	@echo "  - __pycache__ and *.pyc files"
-	@echo ""
-	@printf "Are you sure you want to delete all generated data? [y/N] "; \
-	read REPLY; \
-	case "$$REPLY" in \
-		[Yy]*) \
-			$(MAKE) clean-augmented clean-transformed clean-test clean-charts clean-pycache; \
-			echo "$(COLOR_GREEN)$(COLOR_BOLD)✓ All generated data removed$(COLOR_RESET)"; \
-			;; \
-		*) \
-			echo "$(COLOR_CYAN)Cleanup cancelled$(COLOR_RESET)"; \
-			;; \
-	esac
-
 # ==============================================================================
 # EXECUTION TARGETS - Pipeline Scripts
 # ==============================================================================
-distribution:
-	@echo "$(COLOR_BOLD)Running distribution analysis...$(COLOR_RESET)"
-	python3 Distribution.py -src data/images
-	@echo "$(COLOR_GREEN)✓ Distribution analysis complete$(COLOR_RESET)"
+distribution-apple:
+	@echo "$(COLOR_BOLD)Running distribution analysis for Apple...$(COLOR_RESET)"
+	$(PYTHON) scripts/Distribution.py Apple/
+	@echo "$(COLOR_GREEN)✓ Apple distribution analysis complete$(COLOR_RESET)"
+
+distribution-grape:
+	@echo "$(COLOR_BOLD)Running distribution analysis for Grape...$(COLOR_RESET)"
+	$(PYTHON) scripts/Distribution.py Grape/
+	@echo "$(COLOR_GREEN)✓ Grape distribution analysis complete$(COLOR_RESET)"
 
 augmentation:
 	@echo "$(COLOR_BOLD)Running data augmentation...$(COLOR_RESET)"
 	$(PYTHON) $(AUG_SCRIPT) $(AUG_PATH)
 	@echo "$(COLOR_GREEN)✓ Data augmentation complete$(COLOR_RESET)"
 
-transformation:
-	@echo "$(COLOR_BOLD)Running transformation pipeline (batch mode: Apple_healthy)...$(COLOR_RESET)"
-	python3 Transformation.py -src data/images/Apple_healthy -dst data/transformed_directory/Apple_healthy
-	@echo "$(COLOR_GREEN)✓ Transformation pipeline complete$(COLOR_RESET)"
+transformation-apple:
+	@echo "$(COLOR_BOLD)Running transformation pipeline for Apple...$(COLOR_RESET)"
+	@mkdir -p transformed/Apple_Black_rot transformed/Apple_healthy transformed/Apple_rust transformed/Apple_scab
+	$(PYTHON) scripts/Transformation.py -src Apple/Apple_Black_rot -dst transformed/Apple_Black_rot
+	$(PYTHON) scripts/Transformation.py -src Apple/Apple_healthy -dst transformed/Apple_healthy
+	$(PYTHON) scripts/Transformation.py -src Apple/Apple_rust -dst transformed/Apple_rust
+	$(PYTHON) scripts/Transformation.py -src Apple/Apple_scab -dst transformed/Apple_scab
+	@echo "$(COLOR_GREEN)✓ Apple transformation pipeline complete$(COLOR_RESET)"
 
-pipeline:
-	@echo "$(COLOR_MAGENTA)$(COLOR_BOLD)Starting full pipeline execution...$(COLOR_RESET)"
-	@echo ""
-	@echo "$(COLOR_CYAN)Step 1/3: Distribution Analysis$(COLOR_RESET)"
-	@$(MAKE) distribution
-	@echo ""
-	@echo "$(COLOR_CYAN)Step 2/3: Data Augmentation$(COLOR_RESET)"
-	@$(MAKE) augmentation
-	@echo ""
-	@echo "$(COLOR_CYAN)Step 3/3: Transformation Pipeline$(COLOR_RESET)"
-	@$(MAKE) transformation
-	@echo ""
-	@echo "$(COLOR_MAGENTA)$(COLOR_BOLD)✓ Full pipeline execution complete!$(COLOR_RESET)"
+transformation-grape:
+	@echo "$(COLOR_BOLD)Running transformation pipeline for Grape...$(COLOR_RESET)"
+	@mkdir -p transformed/Grape_Black_rot transformed/Grape_Esca transformed/Grape_healthy transformed/Grape_spot
+	$(PYTHON) scripts/Transformation.py -src Grape/Grape_Black_rot -dst transformed/Grape_Black_rot
+	$(PYTHON) scripts/Transformation.py -src Grape/Grape_Esca -dst transformed/Grape_Esca
+	$(PYTHON) scripts/Transformation.py -src Grape/Grape_healthy -dst transformed/Grape_healthy
+	$(PYTHON) scripts/Transformation.py -src Grape/Grape_spot -dst transformed/Grape_spot
+	@echo "$(COLOR_GREEN)✓ Grape transformation pipeline complete$(COLOR_RESET)"
 
 # ==============================================================================
 # CODE QUALITY TARGETS
