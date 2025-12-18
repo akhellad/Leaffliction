@@ -334,8 +334,8 @@ if __name__ == "__main__":
     # This ensures consistent label mapping between train and validation
     shared_label_encoder = LabelEncoder()
     shared_label_encoder.fit(all_labels)
-    print(f"Label mapping: {dict(zip(shared_label_encoder.classes_,
-                                     range(n_classes)))}")
+    label_map = dict(zip(shared_label_encoder.classes_, range(n_classes)))
+    print(f"Label mapping: {label_map}")
 
     train_generator = OptimizedDataGenerator(
         train_paths,
