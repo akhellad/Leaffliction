@@ -1,6 +1,6 @@
 from invoke import task
 
-PYTHON = "python"
+PYTHON = "python3"
 PLANTS = {
     "Apple": ["Apple_Black_rot", "Apple_healthy", "Apple_rust", "Apple_scab"],
     "Grape": ["Grape_Black_rot", "Grape_Esca", "Grape_healthy", "Grape_spot"],
