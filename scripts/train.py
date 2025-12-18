@@ -4,6 +4,7 @@ import zipfile
 import time
 import cv2
 import numpy as np
+import matplotlib
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import (
     Dense, Conv2D, MaxPooling2D, Flatten, Dropout, Input, BatchNormalization
@@ -13,6 +14,7 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.optimizers import Adam
 from sklearn.preprocessing import LabelEncoder
 from tensorflow.keras.utils import Sequence
+matplotlib.use('TkAgg')
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'

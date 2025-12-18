@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import sys
+import matplotlib
 import matplotlib.pyplot as plt
 import os
 import warnings
@@ -9,6 +10,7 @@ import zipfile
 import logging
 from tensorflow.keras.models import load_model
 import tensorflow as tf
+matplotlib.use('TkAgg')
 
 warnings.filterwarnings("ignore", category=UserWarning,
                         module='tensorflow')
@@ -220,7 +222,8 @@ Examples:
         zip_ref.extractall("extracted_model")
 
     # Load model
-    model = load_model('extracted_model/model.h5', compile=False)
+    model = load_model('extracted_model/leaffliction_rendu/Apple/model.h5',
+                       compile=False)
     model.compile(optimizer='adam',
                   loss='categorical_crossentropy',
                   metrics=['accuracy'])

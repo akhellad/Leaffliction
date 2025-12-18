@@ -2,8 +2,10 @@ import os
 import sys
 from PIL import Image, ImageOps
 import random
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+matplotlib.use('TkAgg')
 
 
 def flip_image(image):

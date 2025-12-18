@@ -1,8 +1,9 @@
 ; Ignore F821 - Undefined name errors (from cross-cell dependencies)
 ; Ignore F841 - Unused variable warnings
 ; Ignore E501 - Line too long errors
+; Ignore W293 - Blank line contains whitespace (common in notebooks)
 ; Exclude - Cache, venv, and transformed directories
 [flake8]
-extend-ignore = F821, F841
-max-line-length = 79 
+; extend-ignore = F821, F841, W293
+max-line-length = 79
 exclude = .git,__pycache__,.venv

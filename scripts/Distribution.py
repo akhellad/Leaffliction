@@ -1,5 +1,7 @@
 import os
+import matplotlib
 import matplotlib.pyplot as plt
+matplotlib.use('TkAgg')
 
 
 def analyze_dataset(directory):

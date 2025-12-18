@@ -39,14 +39,14 @@ def transformation(c, plant="Apple"):
 @task
 def train(c, plant="Apple", epochs=50, batch_size=32):
     """Train CNN model."""
-    c.run(f"{PYTHON} scripts/train.py --source {plant}/ --epochs {epochs} "
+    c.run(f"{PYTHON} scripts/train.py {plant}/ {epochs} "
           f"--batch-size {batch_size}")
 
 
 @task
-def predict(c, image, model="models/best_model.h5"):
+def predict(c, image, model="output_model.zip", data_dir="Apple/"):
     """Run inference."""
-    c.run(f"{PYTHON} scripts/predict.py --image {image} --model {model}")
+    c.run(f'{PYTHON} scripts/predict.py -m {model} -d {data_dir} "{image}"')
 
 
 @task
